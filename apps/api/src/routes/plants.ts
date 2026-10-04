@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { CalculateNextDueAt } from "../lib/careLogic";
 import { prisma } from "../lib/prisma";
 import { ValidateRequiredText } from "../lib/validation";
 
@@ -27,4 +28,24 @@ PlantRouter.put("/:Id", async (req, res) => {
 PlantRouter.delete("/:Id", async (req, res) => {
   await prisma.plant.delete({ where: { Id: Number(req.params.Id) } });
   res.status(204).send();
+});
+
+PlantRouter.get("/:Id/schedules", async (req, res) => {
+  const Schedules = await prisma.careSchedule.findMany({
+    where: { PlantId: Number(req.params.Id) },
+    orderBy: { NextDueAt: "asc" },
+  });
+  res.json(Schedules);
+});
+
+PlantRouter.post("/:Id/schedules", async (req, res) => {
+  const { Type, FrequencyDays } = req.body;
+  if (!Type || !FrequencyDays) {
+    return res.status(400).json({ Message: "Tipe dan frekuensi wajib diisi" });
+  }
+  const NextDueAt = CalculateNextDueAt(Number(FrequencyDays));
+  const Schedule = await prisma.careSchedule.create({
+    data: { PlantId: Number(req.params.Id), Type, FrequencyDays: Number(FrequencyDays), NextDueAt },
+  });
+  res.status(201).json(Schedule);
 });
