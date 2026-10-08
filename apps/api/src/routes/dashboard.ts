@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { DetermineCareStatus } from "../lib/careLogic";
+import { AsyncHandler } from "../lib/asyncHandler";
 
 export const DashboardRouter = Router();
 
-DashboardRouter.get("/", async (req, res) => {
+DashboardRouter.get("/", AsyncHandler(async (req, res) => {
   const Now = new Date();
   const Gardens = await prisma.garden.findMany({ include: { Plants: { include: { Schedules: true } } } });
 
@@ -44,4 +45,4 @@ DashboardRouter.get("/", async (req, res) => {
     Summary: { TotalGardens, TotalPlants, SchedulesDueToday, OverdueSchedules, PlantsWithoutSchedule },
     Plants: PlantRows,
   });
-});
+}));

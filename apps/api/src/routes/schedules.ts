@@ -1,15 +1,29 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { CalculateNextDueAt } from "../lib/careLogic";
+import { AsyncHandler } from "../lib/asyncHandler";
 
 export const ScheduleRouter = Router();
 
-ScheduleRouter.delete("/:Id", async (req, res) => {
-  await prisma.careSchedule.delete({ where: { Id: Number(req.params.Id) } });
-  res.status(204).send();
-});
+ScheduleRouter.delete("/:Id", AsyncHandler(async (req, res) => {
+  try {
+    await prisma.careSchedule.delete({ where: { Id: Number(req.params.Id) } });
+    res.status(204).send();
+  } catch (Error: any) {
+    if (Error?.code === "P2003") {
+      return res.status(400).json({
+        Message:
+          "Jadwal ini tidak bisa dihapus karena sudah memiliki riwayat perawatan (pernah ditandai 'Sudah Dilakukan').",
+      });
+    }
+    if (Error?.code === "P2025") {
+      return res.status(404).json({ Message: "Jadwal tidak ditemukan" });
+    }
+    throw Error;
+  }
+}));
 
-ScheduleRouter.post("/:Id/done", async (req, res) => {
+ScheduleRouter.post("/:Id/done", AsyncHandler(async (req, res) => {
   const Schedule = await prisma.careSchedule.findUnique({ where: { Id: Number(req.params.Id) } });
   if (!Schedule) return res.status(404).json({ Message: "Jadwal tidak ditemukan" });
 
@@ -33,4 +47,4 @@ ScheduleRouter.post("/:Id/done", async (req, res) => {
     NextDueAt: Updated.NextDueAt,
     Message: "Perawatan berhasil dicatat",
   });
-});
+}));

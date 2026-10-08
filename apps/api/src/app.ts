@@ -16,3 +16,9 @@ App.use("/api/gardens", GardenRouter);
 App.use("/api/plants", PlantRouter);
 App.use("/api/schedules", ScheduleRouter);
 App.use("/api/dashboard", DashboardRouter);
+
+App.use((Error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("Unhandled error:", Error);
+  if (res.headersSent) return next(Error);
+  res.status(500).json({ Message: "Terjadi kesalahan tak terduga di server" });
+});

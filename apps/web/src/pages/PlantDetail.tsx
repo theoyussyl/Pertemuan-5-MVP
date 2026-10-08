@@ -15,6 +15,7 @@ export function PlantDetail() {
   const [ScheduleType, setScheduleType] = useState("WATERING");
   const [FrequencyDays, setFrequencyDays] = useState(3);
   const [Message, setMessage] = useState("");
+  const [IsError, setIsError] = useState(false);
 
   useEffect(() => { LoadAll(); }, [Id]);
 
@@ -27,20 +28,41 @@ export function PlantDetail() {
 
   async function HandleAddSchedule(Event: React.FormEvent) {
     Event.preventDefault();
-    await ApiPost(`/plants/${Id}/schedules`, { Type: ScheduleType, FrequencyDays });
-    LoadAll();
+    setMessage("");
+    setIsError(false);
+    try {
+      await ApiPost(`/plants/${Id}/schedules`, { Type: ScheduleType, FrequencyDays });
+      LoadAll();
+    } catch (Error) {
+      setIsError(true);
+      setMessage(Error instanceof Error ? Error.message : "Gagal menambah jadwal");
+    }
   }
 
   async function HandleMarkDone(ScheduleId: number) {
-    const Result = await ApiPost<{ Message: string }>(`/schedules/${ScheduleId}/done`, {});
-    setMessage(Result.Message);
-    LoadAll();
+    setMessage("");
+    setIsError(false);
+    try {
+      const Result = await ApiPost<{ Message: string }>(`/schedules/${ScheduleId}/done`, {});
+      setMessage(Result.Message);
+      LoadAll();
+    } catch (Error) {
+      setIsError(true);
+      setMessage(Error instanceof Error ? Error.message : "Gagal mencatat perawatan");
+    }
   }
 
   async function HandleDeleteSchedule(ScheduleId: number) {
     if (!confirm("Hapus jadwal ini?")) return;
-    await ApiDelete(`/schedules/${ScheduleId}`);
-    LoadAll();
+    setMessage("");
+    setIsError(false);
+    try {
+      await ApiDelete(`/schedules/${ScheduleId}`);
+      LoadAll();
+    } catch (Error) {
+      setIsError(true);
+      setMessage(Error instanceof Error ? Error.message : "Gagal menghapus jadwal");
+    }
   }
 
   if (!Plant) return <p className="p-6 text-gray-500">Memuat data...</p>;
@@ -52,7 +74,7 @@ export function PlantDetail() {
         <h1 className="text-2xl font-bold text-gray-800">{Plant.Name}</h1>
         <p className="text-gray-500">{Plant.Species || "Spesies belum diisi"}</p>
       </div>
-      {Message && <p className="text-green-700 text-sm">{Message}</p>}
+      {Message && <p className={`text-sm ${IsError ? "text-red-600" : "text-green-700"}`}>{Message}</p>}
 
       <section className="bg-white rounded-xl shadow p-4 space-y-4">
         <h2 className="font-semibold text-gray-800">Jadwal Perawatan</h2>
